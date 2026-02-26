@@ -12,7 +12,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.wcs import WCS
 
-# === Main (Functions) =============================================================================
+# === Main =========================================================================================
 
 def append_psf_extension(data_file: str, psf_file: str, output_file: str, overwrite: bool = False) -> fits.HDUList:
 
