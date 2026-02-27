@@ -118,6 +118,16 @@ class MixtureGP(jft.Model):
     # NOTE: Observed Signal ($s$): What you actually see in the sky (the mixed channels).
     # NOTE: Latent Signal ($u$): The hidden, underlying structure that generates the observations.
 
+    # Supported activation functions
+    ACTIVATIONS = {
+        "exp": jnp.exp,
+        "softplus": lambda x: jnp.log1p(jnp.exp(x)),
+        "sigmoid": jax.nn.sigmoid,
+        "identity": lambda x: x,
+        "relu": jax.nn.relu,
+        "square": lambda x: x**2,
+    }
+
     def __init__(
         self,
         spatial_gps: SpatialGP,
@@ -126,7 +136,12 @@ class MixtureGP(jft.Model):
         mix_off_diag: tuple[float, float] = (0.0, 1.0),
         mix_full: tuple[float, float] = (0.0, 1.0),
         mix_offset: tuple[float, float] = (0.0, 1.0),
+        activation: str = "exp",
     ):
+        if activation not in self.ACTIVATIONS:
+            raise ValueError(f"Unknown activation: {activation}. Choose from {list(self.ACTIVATIONS.keys())}")
+        self.activation = self.ACTIVATIONS[activation]
+        self.activation_name = activation
         self.spatial_gps = spatial_gps
         self.mix_mode = mix_mode
         domain = self.spatial_gps.domain
@@ -169,7 +184,7 @@ class MixtureGP(jft.Model):
             mixing_matrix = _assemble_cholesky_matrix(diag, off_diag)
 
         mixture_output = jnp.tensordot(mixing_matrix, base_outputs, axes=(1, 0))
-        return jnp.exp(mixture_output + self.mixing_offset(x)[:, None, None])
+        return self.activation(mixture_output + self.mixing_offset(x)[:, None, None])
 
     def sample(self, key: int | jax.Array) -> jnp.ndarray:
         """Generate a random sample from the prior."""

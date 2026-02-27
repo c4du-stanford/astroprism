@@ -208,3 +208,7 @@ __marimo__/
 
 # Data Files
 data/
+examples/tutorial_results/
+*.pkl
+*.fits
+*.npy

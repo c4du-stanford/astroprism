@@ -1,0 +1,19 @@
+## Environment
+
+To run this tutorial, create a virtual environment and install AstroPrism in editable mode:
+
+```bash
+cd /path/to/astroprism
+
+# Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install AstroPrism with dev dependencies
+pip install -e ".[dev]"
+
+# Register the Jupyter kernel
+python -m ipykernel install --user --name=astroprism
+```
+
+Then select the **astroprism** kernel in Jupyter or VS Code.
