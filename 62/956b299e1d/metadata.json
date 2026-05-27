@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.5.1",
+  "checkpoint_id": "62956b299e1d",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "README.md",
+    "configs/default.yaml",
+    "configs/my_run.yaml",
+    "examples/08_full_pipeline.ipynb",
+    "examples/09_multi_instrument_pipeline.ipynb",
+    "examples/10_full_pipeline.ipynb",
+    "examples/tutorial_results_multi/minisanity.txt",
+    "pyproject.toml",
+    "src/astroprism/_version.py",
+    "src/astroprism/io/results.py",
+    "src/astroprism/models/likelihood.py",
+    "src/astroprism/scripts/run.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/62/956b299e1d/0/metadata.json",
+      "transcript": "/62/956b299e1d/0/full.jsonl",
+      "content_hash": "/62/956b299e1d/0/content_hash.txt",
+      "prompt": "/62/956b299e1d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 2922,
+    "cache_creation_tokens": 34173,
+    "cache_read_tokens": 712053,
+    "output_tokens": 7814,
+    "api_call_count": 22
+  }
+}
