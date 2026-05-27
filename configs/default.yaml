@@ -91,7 +91,7 @@ noise:
   noise_scale:
     prior_type:   "lognormal"
     prior_params: [0.01, 0.1]
-    constant_until:       9999   # frozen forever
+    constant_until:how       9999   # frozen forever
     point_estimate_until: 0
 
 # ── Masking (held-out validation) ─────────────────────────────────────────────
