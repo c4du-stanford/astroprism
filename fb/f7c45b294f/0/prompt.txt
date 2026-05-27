@@ -1,0 +1,147 @@
+source /Users/steven/Desktop/projects/AstroGP/astroprism/.venv/bin/activate---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/jax/_src/array.py:295, in ArrayImpl.__bool__(self)
+    294 def __bool__(self):
+--> 295   core.check_bool_conversion(self)
+    296   return bool(self._value)
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/jax/_src/core.py:859, in check_bool_conversion(arr)
+    858 if arr.size > 1:
+--> 859   raise ValueError("The truth value of an array with more than one element"
+    860                    " is ambiguous. Use a.any() or a.all()")
+
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+
+The above exception was the direct cause of the following exception:
+
+ValueError                                Traceback (most recent call last)
+Cell In[8], line 9
+      5 # Build likelihood: Combines data, model, and mask (readout)
+      6 likelihood = build_likelihood(dataset, model, mask=dataset.readout)
+      7 
+      8 # Run inference: Optimizes the likelihood
+----> 9 samples, state = run_inference(
+     10     likelihood,
+     11     n_iterations=10,   # number of iterations
+     12     n_samples=2,      # number of samples
+
+File ~/Desktop/projects/AstroGP/astroprism/src/astroprism/inference/vi.py:153, in run_inference(likelihood, n_iterations, n_samples, output_directory, seed)
+    151 """Convenience wrapper to run VI in one line with default settings."""
+    152 vi = VariationalInference(likelihood, seed=seed)
+--> 153 return vi.run(n_iterations, n_samples, output_directory)
+
+File ~/Desktop/projects/AstroGP/astroprism/src/astroprism/inference/vi.py:123, in VariationalInference.run(self, n_iterations, n_samples, output_directory, resume, constants, point_estimates)
+    104 nonlinearly_update_kwargs = dict(
+    105     minimize_kwargs=dict(
+    106         name="nonlinear_solver",
+   (...)    110     )
+    111 )
+    112 kl_kwargs = dict(
+    113     minimize=jft.optimize._newton_cg,
+    114     minimize_kwargs=dict(
+   (...)    120     ),
+    121 )
+--> 123 samples, state = jft.optimize_kl(
+    124     self.likelihood,
+    125     jft.Vector(self.init_params),
+    126     n_total_iterations=n_iterations,
+    127     n_samples=n_samples,
+    128     key=opt_key,
+    129     odir=output_directory,
+    130     resume=resume,
+    131     sample_mode=self.sample_mode,
+    132     draw_linear_kwargs=draw_linear_kwargs,
+    133     nonlinearly_update_kwargs=nonlinearly_update_kwargs,
+    134     kl_kwargs=kl_kwargs,
+    135     constants=constants,
+    136     point_estimates=point_estimates,
+    137 )
+    139 return samples, state
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/optimize_kl.py:899, in optimize_kl(likelihood, position_or_samples, key, n_total_iterations, n_samples, point_estimates, constants, kl_jit, residual_jit, kl_map, residual_map, kl_reduce, mirror_samples, draw_linear_kwargs, nonlinearly_update_kwargs, kl_kwargs, sample_mode, resume, callback, odir, devices, kl_device_map, residual_device_map, _optimize_vi, _optimize_vi_state)
+    897 for i in range(opt_vi_st.nit, opt_vi.n_total_iterations):
+    898     logger.info(f"{nm}: Starting {i + 1:04d}")
+--> 899     samples, opt_vi_st = opt_vi.update(samples, opt_vi_st)
+    900     msg = opt_vi.get_status_message(samples, opt_vi_st, name=nm)
+    901     logger.info(msg)
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/optimize_kl.py:750, in OptimizeVI.update(self, samples, state, **kwargs)
+    748 # Make the `key` tick independently of whether samples are drawn or not
+    749 key, sk = random.split(key, 2)
+--> 750 samples, st_smpls = self.draw_samples(
+    751     samples,
+    752     key=sk,
+    753     sample_mode=sample_mode,
+    754     point_estimates=point_estimates,
+    755     n_samples=n_samples,
+    756     draw_linear_kwargs=draw_linear_kwargs,
+    757     nonlinearly_update_kwargs=nonlinearly_update_kwargs,
+    758     **kwargs,
+    759 )
+    761 kl_kwargs = _getitem_at_nit(config, "kl_kwargs", nit).copy()
+    762 kl_opt_state = self.kl_minimize(
+    763     samples, constants=constants, **kl_kwargs, **kwargs
+    764 )
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/optimize_kl.py:561, in OptimizeVI.draw_samples(self, samples, key, sample_mode, n_samples, point_estimates, draw_linear_kwargs, nonlinearly_update_kwargs, **kwargs)
+    559     k_smpls = random.split(key, n_samples)
+    560 assert n_samples == len(k_smpls)
+--> 561 samples, st_smpls = self.draw_linear_samples(
+    562     samples.pos,
+    563     k_smpls,
+    564     point_estimates=point_estimates,
+    565     **draw_linear_kwargs,
+    566     **kwargs,
+    567 )
+    568 if sample_mode.lower().startswith("nonlinear"):
+    569     samples, st_smpls = self.nonlinearly_update_samples(
+    570         samples,
+    571         point_estimates=point_estimates,
+    572         **nonlinearly_update_kwargs,
+    573         **kwargs,
+    574     )
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/optimize_kl.py:414, in OptimizeVI.draw_linear_samples(self, primals, keys, **kwargs)
+    412 sampler = Partial(self.draw_linear_residual, **kwargs)
+    413 sampler = self.residual_map(sampler, in_axes=(None, 0))
+--> 414 smpls, smpls_states = sampler(primals, keys)
+    415 # zip samples such that the mirrored-counterpart always comes right
+    416 # after the original sample
+    417 smpls = concatenate_zip(smpls, -smpls)
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/custom_map.py:73, in _generic_smap(fun, in_axes, out_axes, unroll, _scan, *x, **k)
+     64         raise TypeError(f"expected `in_axes` index of type int; got {i!r}")
+     66 fun_reord = partial(
+     67     _fun_reord,
+     68     fun=fun,
+   (...)     71     in_axes=in_axes,
+     72 )
+---> 73 _, y = _scan(fun_reord, None, mapped, unroll=unroll)
+     75 if out_axes is None:
+     76     out_axes, out_axes_td = tree_flatten(out_axes)
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/custom_map.py:146, in _lscan(f, init, xs, length, unroll)
+    144 length = lvs[0].shape[0] if length is None else length
+    145 for i in range(length):
+--> 146     carry, y = f(carry, tree_map(lambda x: x[i], xs))
+    147     if ys is None:
+    148         # NOTE, `empty_like` will always allocate on the primary device even
+    149         # if `y` is on a different device. Forcefully allocate on the same
+    150         # device as `y`.
+    151         with jax.default_device(like_device):
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/nifty8/re/custom_map.py:20, in _fun_reord(_, mapped, fun, unmapped, unflatten, in_axes)
+     18 assert len(un) + len(mapped) == len(in_axes)
+     19 args = tuple(un.pop(0) if a is None else mapped.pop(0) for a in in_axes)
+---> 20 y = fun(*unflatten(args))
+     21 return None, y
+
+File ~/Desktop/projects/AstroGP/astroprism/.venv/lib/python3.11/site-packages/jax/_src/tree_util.py:492, in _HashableCallableShim.__call__(self, *args, **kw)
+    491 def __call__(self, *args, **kw):
+--> 492   return self.fun(*args, **kw)
+
+ValueError: Exception raised while checking equality of metadata fields of pytree. Make sure that metadata fields are hashable and have simple equality semantics. (Note: arrays cannot be passed as metadata fields!) whats tis
+
+---
+
+how do i set the point estimate and constant etc in the notebook

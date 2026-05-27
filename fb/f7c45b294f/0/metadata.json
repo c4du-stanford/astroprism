@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.5.1",
+  "checkpoint_id": "fbf7c45b294f",
+  "session_id": "d298452e-f36f-42fc-bc02-04967abd267e",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-27T18:28:56.677595Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "configs/default.yaml",
+    "examples/00_preprocessing.ipynb",
+    "examples/08_full_pipeline_miri.ipynb",
+    "src/astroprism/_version.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-4-7[1m]",
+  "turn_id": "dbde3e798a81",
+  "token_usage": {
+    "input_tokens": 2278,
+    "cache_creation_tokens": 28416,
+    "cache_read_tokens": 223127,
+    "output_tokens": 9299,
+    "api_call_count": 9
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-27T18:28:56.617069Z",
+    "agent_lines": 0,
+    "human_added": 495,
+    "human_modified": 1036,
+    "human_removed": 0,
+    "total_committed": 509,
+    "agent_percentage": 0
+  }
+}
