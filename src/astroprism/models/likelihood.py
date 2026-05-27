@@ -61,6 +61,10 @@ def build_likelihood(dataset, observation_model, mask):
     # 3. Build NIFTy Likelihood
     return jft.VariableCovarianceGaussian(data_flat).amend(likelihood_model)
 
+# TODO: add different likelihood types
+# jft.Gaussian(data, noise_std_inv=1.0/sigma)         # fixed noise
+# jft.VariableCovarianceGaussian(data)                 # model returns (mean, inv_std)
+# jft.Poissonian(data)
 
 # def build_likelihood(dataset: BaseDataset, model: jft.Model, mask: list[jnp.ndarray] | None = None) -> jft.Likelihood:
 #     """
@@ -91,3 +95,4 @@ def build_likelihood(dataset, observation_model, mask):
 #     likelihood = jft.VariableCovarianceGaussian(data_flat).amend(model)
 
 #     return likelihood
+

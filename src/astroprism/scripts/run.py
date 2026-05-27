@@ -17,7 +17,10 @@ jax.config.update("jax_enable_x64", True)
 import argparse
 import os
 import sys
+import warnings
 from pathlib import Path
+
+warnings.filterwarnings("ignore", message=".*datfix.*|.*obsfix.*")
 
 import yaml
 
@@ -34,13 +37,11 @@ from astroprism.inference.vi import VariationalInference
 
 # === Main =========================================================================================
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Run astroprism Bayesian inference pipeline.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument("--config", required=True, metavar="PATH", help="Path to config YAML")
-    args = parser.parse_args()
+def main(args=None):
+    if args is None:
+        parser = argparse.ArgumentParser(description="Run astroprism Bayesian inference pipeline.")
+        parser.add_argument("--config", required=True, metavar="PATH", help="Path to config YAML")
+        args = parser.parse_args()
 
     # 1. Load config
     cfg = load_config(args.config)

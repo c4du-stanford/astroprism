@@ -1,0 +1,128 @@
+data:
+  path: data/tutorial/jwst_miri_cutout/
+  instrument: JWST_MIRI
+  extension: fits
+field:
+  offset_mean: 0.0
+  offset_std:
+    prior_params:
+    - 1.0
+    - 0.1
+    constant_until: 0
+    point_estimate_until: 0
+  fluctuations:
+    prior_params:
+    - 1.0
+    - 0.1
+    constant_until: 0
+    point_estimate_until: 0
+  loglogavgslope:
+    prior_params:
+    - -3.0
+    - 1.0
+    constant_until: 0
+    point_estimate_until: 0
+  flexibility:
+    prior_params:
+    - 0.5
+    - 0.1
+    constant_until: 0
+    point_estimate_until: 0
+signal:
+  activation: exp
+  mixing_mode: full
+  mixing_matrix:
+    prior_type: normal
+    prior_params:
+    - 0.0
+    - 1.0
+    constant_until: 0
+    point_estimate_until: 0
+  mixing_offset:
+    prior_type: normal
+    prior_params:
+    - 0.0
+    - 1.0
+    constant_until: 0
+    point_estimate_until: 0
+response:
+  psf_smoothing:
+    prior_type: lognormal
+    prior_params:
+    - 1.0
+    - 0.1
+    constant_until: 0
+    point_estimate_until: 9999
+  psf_rotation:
+    prior_type: normal
+    prior_params:
+    - 0.0
+    - 0.1
+    constant_until: 0
+    point_estimate_until: 9999
+noise:
+  noise_floor:
+    prior_type: lognormal
+    prior_params:
+    - 0.01
+    - 0.1
+    constant_until: 5
+    point_estimate_until: 9999
+  noise_scale:
+    prior_type: lognormal
+    prior_params:
+    - 0.01
+    - 0.1
+    constant_until: 9999
+    point_estimate_until: 0
+masking:
+  enabled: false
+  seed: 42
+  strategies: []
+inference:
+  n_iterations: 20
+  n_samples: 4
+  output_directory: output/my_run
+  seed: 42
+  sample_mode: linear_resample
+  resume: true
+solver:
+  ls_absdelta: 0.001
+  ls_maxiter: 1000
+  nls_xtol: 0.01
+  nls_maxiter: 5
+  kl_absdelta: 0.01
+  kl_xtol: 1.0e-08
+  kl_maxiter: 100
+_derived:
+  n_channels: 4
+  signal_shape:
+  - 600
+  - 600
+  distances:
+  - 0.11091449907273217
+  - 0.11091449905375952
+  ref_idx: 2
+  channel_keys:
+  - F1000W_full
+  - F1130W_full
+  - F2100W_full
+  - F770W_full
+  shapes:
+  - - 600
+    - 600
+  - - 600
+    - 600
+  - - 600
+    - 600
+  - - 600
+    - 600
+  pixel_scales:
+  - - 0.11091449975820492
+    - 0.1109144997630491
+  - - 0.11091449949791077
+    - 0.11091449946799463
+  - - 0.11091449907273217
+    - 0.11091449905375952
+  - - 0.11091450012231652
+    - 0.11091450010349585

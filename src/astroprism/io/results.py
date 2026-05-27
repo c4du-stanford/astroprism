@@ -26,6 +26,9 @@ class PosteriorResult:
     """
     Load and analyze results from a completed astroprism run.
 
+    Models and samples are loaded lazily and cached. Predictions are computed
+    in a single pass through the forward model to avoid redundant work.
+
     Parameters
     ----------
     run_dir : str or Path
@@ -34,8 +37,13 @@ class PosteriorResult:
     Examples
     --------
     result = PosteriorResult("output/jwst_miri_tutorial")
-    signal_mean = result.signal_mean()       # (n_channels, ny, nx)
-    signal_std = result.signal_std()         # (n_channels, ny, nx)
+
+    # Signal only (no dataset needed)
+    predictions = result.predict()
+    signal_mean = predictions["signal_mean"]
+
+    # Full pipeline (needs dataset)
+    predictions = result.predict(quantities=["signal", "response", "noise_std"])
     """
 
     def __init__(self, run_dir: str | Path):
@@ -51,9 +59,15 @@ class PosteriorResult:
         else:
             self._files_used = None
 
+        # Lazy caches
         self._samples = None
         self._state = None
         self._dataset = None
+        self._signal_model = None
+        self._response_model = None
+        self._noise_model = None
+
+    # === Properties ==============================================================================
 
     @property
     def config(self) -> dict:
@@ -65,20 +79,20 @@ class PosteriorResult:
         """Derived values (n_channels, signal_shape, distances, etc.)."""
         return self._config["_derived"]
 
-    # === Loading =================================================================================
-
-    def load_samples(self, filename: str = "last.pkl"):
-        """Load posterior samples from checkpoint."""
+    @property
+    def samples(self):
+        """Posterior samples (lazy loaded, cached)."""
         if self._samples is None:
-            with open(self.run_dir / filename, "rb") as f:
+            with open(self.run_dir / "last.pkl", "rb") as f:
                 self._samples, self._state = pickle.load(f)
-        return self._samples, self._state
+        return self._samples
 
-    def load_dataset(self):
-        """Re-load the dataset from saved file paths."""
+    @property
+    def dataset(self):
+        """Original dataset (lazy loaded from files_used.yaml, cached)."""
         if self._dataset is None:
             if self._files_used is None:
-                raise FileNotFoundError("No files_used.yaml found — cannot reload dataset.")
+                raise FileNotFoundError("No files_used.yaml — cannot reload dataset.")
             self._dataset = load_dataset(
                 path=self._files_used["data_path"],
                 instrument=self._files_used["instrument"],
@@ -86,96 +100,91 @@ class PosteriorResult:
             )
         return self._dataset
 
-    # === Model reconstruction ====================================================================
+    @property
+    def signal_model(self) -> SignalModel:
+        """Signal model (lazy built, cached)."""
+        if self._signal_model is None:
+            d = self.derived
+            field = FieldModel(
+                n_channels=d["n_channels"],
+                shape=tuple(d["signal_shape"]),
+                distances=tuple(d["distances"]),
+            )
+            self._signal_model = SignalModel(field)
+        return self._signal_model
 
-    def build_signal_model(self) -> SignalModel:
-        """Reconstruct the signal model from saved config (no dataset needed)."""
-        d = self.derived
-        spatial_gp = FieldModel(
-            n_channels=d["n_channels"],
-            shape=tuple(d["signal_shape"]),
-            distances=tuple(d["distances"]),
-        )
-        return SignalModel(spatial_gp)
+    @property
+    def response_model(self) -> InstrumentResponse:
+        """Response model (lazy built, cached). Triggers dataset load."""
+        if self._response_model is None:
+            d = self.derived
+            ds = self.dataset
+            self._response_model = InstrumentResponse(
+                dataset=ds,
+                signal_wcs=ds.wcs[d["ref_idx"]],
+                signal_shape=tuple(d["signal_shape"]),
+            )
+        return self._response_model
 
-    def build_response_model(self, dataset=None) -> InstrumentResponse:
-        """Reconstruct the instrument response model (needs dataset for WCS/PSFs)."""
-        if dataset is None:
-            dataset = self.load_dataset()
-        d = self.derived
-        return InstrumentResponse(
-            dataset=dataset,
-            signal_wcs=dataset.wcs[d["ref_idx"]],
-            signal_shape=tuple(d["signal_shape"]),
-        )
-
-    def build_noise_model(self) -> NoiseModel:
-        """Reconstruct the noise model from saved config."""
-        return NoiseModel(n_channels=self.derived["n_channels"])
-
-    def build_forward_model(self, dataset=None) -> ForwardModel:
-        """Reconstruct the full forward model."""
-        return ForwardModel(
-            signal_model=self.build_signal_model(),
-            response_model=self.build_response_model(dataset),
-            noise_model=self.build_noise_model(),
-        )
+    @property
+    def noise_model(self) -> NoiseModel:
+        """Noise model (lazy built, cached)."""
+        if self._noise_model is None:
+            self._noise_model = NoiseModel(n_channels=self.derived["n_channels"])
+        return self._noise_model
 
     # === Predictions =============================================================================
 
-    def predict_signal(self, samples=None) -> list[jnp.ndarray]:
+    def predict(self, quantities=None, dataset=None):
         """
-        Compute the posterior signal (sky reconstruction) for each sample.
+        Compute predictions in a single pass through the forward model.
 
-        Returns list of arrays, each with shape (n_channels, ny, nx).
-        """
-        if samples is None:
-            samples, _ = self.load_samples()
-        gp = self.build_signal_model()
-        return [jnp.array(gp(s.tree)) for s in samples]
+        Parameters
+        ----------
+        quantities : list of str, optional
+            What to compute. Options: "signal", "response", "noise_std".
+            Default: ["signal"].
+        dataset : BaseDataset, optional
+            Dataset for response/noise predictions. Loaded from files_used.yaml
+            if not provided.
 
-    def predict_response(self, samples=None, dataset=None) -> list[list[jnp.ndarray]]:
+        Returns
+        -------
+        dict with keys:
+            "signal"    : list of (n_channels, ny, nx) arrays, one per sample
+            "response"  : list of [ch0_array, ch1_array, ...], one per sample
+            "noise_std" : list of [ch0_array, ch1_array, ...], one per sample
+            "signal_mean" : (n_channels, ny, nx) mean across samples
+            "signal_std"  : (n_channels, ny, nx) std across samples
+        Only requested quantities (and their means/stds) are included.
         """
-        Compute the instrument response (model-predicted data) for each sample.
+        if quantities is None:
+            quantities = ["signal"]
 
-        Returns list of lists — outer: per sample, inner: per channel.
-        """
-        if samples is None:
-            samples, _ = self.load_samples()
-        gp = self.build_signal_model()
-        response = self.build_response_model(dataset)
-        results = []
-        for s in samples:
+        need_response = "response" in quantities or "noise_std" in quantities
+
+        results = {q: [] for q in quantities}
+
+        for s in self.samples:
             x = s.tree
-            signal = gp(x)
-            results.append(response(x, signal))
+
+            if "signal" in quantities or need_response:
+                sig = self.signal_model(x)
+
+            if "signal" in quantities:
+                results["signal"].append(jnp.array(sig))
+
+            if need_response:
+                resp = self.response_model(x, sig)
+                if "response" in quantities:
+                    results["response"].append(resp)
+                if "noise_std" in quantities:
+                    results["noise_std"].append(self.noise_model(x, resp))
+
+        # Compute mean/std for signal
+        if "signal" in quantities:
+            stacked = jnp.stack(results["signal"])
+            results["signal_mean"] = jnp.mean(stacked, axis=0)
+            results["signal_std"] = jnp.std(stacked, axis=0)
+
         return results
-
-    def predict_noise_std(self, samples=None, dataset=None) -> list[list[jnp.ndarray]]:
-        """
-        Compute the noise standard deviation for each sample.
-
-        Returns list of lists — outer: per sample, inner: per channel.
-        """
-        if samples is None:
-            samples, _ = self.load_samples()
-        gp = self.build_signal_model()
-        response = self.build_response_model(dataset)
-        noise = self.build_noise_model()
-        results = []
-        for s in samples:
-            x = s.tree
-            signal = gp(x)
-            resp = response(x, signal)
-            results.append(noise(x, resp))
-        return results
-
-    def signal_mean(self) -> jnp.ndarray:
-        """Posterior mean of the signal. Shape: (n_channels, ny, nx)."""
-        signals = self.predict_signal()
-        return jnp.mean(jnp.stack(signals), axis=0)
-
-    def signal_std(self) -> jnp.ndarray:
-        """Posterior std of the signal. Shape: (n_channels, ny, nx)."""
-        signals = self.predict_signal()
-        return jnp.std(jnp.stack(signals), axis=0)

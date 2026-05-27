@@ -212,3 +212,7 @@ examples/tutorial_results/
 *.pkl
 *.fits
 *.npy
+
+# Others
+.claude/
+.entire/

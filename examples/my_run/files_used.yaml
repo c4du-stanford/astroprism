@@ -1,0 +1,3 @@
+data_path: /Users/steven/Desktop/projects/AstroGP/astroprism/data/tutorial/jwst_miri_cutout
+instrument: JWST_MIRI
+extension: fits

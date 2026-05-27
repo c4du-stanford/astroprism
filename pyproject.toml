@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [project.scripts]
-astroprism-run = "astroprism.scripts.run:main"
+astroprism = "astroprism.scripts.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/StevenDillmann/astroprism"

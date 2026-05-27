@@ -1,0 +1,105 @@
+
+OPTIMIZE_KL: Iteration 0001 ⛰:+3.7920e+07
+OPTIMIZE_KL: #(Nonlinear sampling steps) (4, 6, 5, 5)
+OPTIMIZE_KL: #(KL minimization steps) 1
+OPTIMIZE_KL: Likelihood residual(s):
+'reduced χ²: 4.3e+02± 1.6e+02, avg: -1.1e+01±     2.7, #dof: 162412'
+
+OPTIMIZE_KL: Prior residual(s):
+background_std          :: 'reduced χ²: 8.7e+01±     1.3, avg:     +4.9±    0.57, #dof:      4'
+flexibility             :: 'reduced χ²:     2.2±     1.3, avg:    -0.46±    0.14, #dof:      4'
+fluctuations            :: 'reduced χ²:     3.5±    0.72, avg:     -1.1±    0.16, #dof:      4'
+loglogavgslope          :: 'reduced χ²:     2.4±    0.32, avg:   +0.093±    0.14, #dof:      4'
+mixing_offset           :: 'reduced χ²:     1.7±     1.1, avg:    -0.43±    0.85, #dof:      4'
+mixture_matrix          :: 'reduced χ²:     1.8±    0.41, avg:     +0.5±   0.093, #dof:     16'
+poisson_scale           :: 'reduced χ²:    0.53±    0.12, avg:    +0.34±   0.034, #dof:      4'
+psf_rotation            :: 'reduced χ²:     2.3±    0.58, avg:     -0.3±    0.65, #dof:      4'
+psf_sigma               :: 'reduced χ²:     2.1±     1.3, avg:    +0.22±    0.39, #dof:      4'
+spectrum                :: 'reduced χ²:     2.0±  0.0011, avg: -0.00022± 0.00055, #dof: 550648'
+xi                      :: 'reduced χ²:     2.0± 0.00085, avg:  +0.0018± 0.00097, #dof:1092960'
+zeromode                :: 'reduced χ²:     1.5±    0.87, avg:   -0.065±    0.73, #dof:      4'
+
+
+OPTIMIZE_KL: Iteration 0002 ⛰:+1.5012e+07
+OPTIMIZE_KL: #(Nonlinear sampling steps) (5, 6, 4, 3)
+OPTIMIZE_KL: #(KL minimization steps) 1
+OPTIMIZE_KL: Likelihood residual(s):
+'reduced χ²: 1.5e+02± 1.1e+02, avg:     -2.6±    0.92, #dof: 162412'
+
+OPTIMIZE_KL: Prior residual(s):
+background_std          :: 'reduced χ²: 8.9e+01±    0.44, avg:     +5.3±    0.44, #dof:      4'
+flexibility             :: 'reduced χ²:     2.6±    0.61, avg:    -0.51±    0.43, #dof:      4'
+fluctuations            :: 'reduced χ²:     4.0±     1.2, avg:     -1.2±    0.24, #dof:      4'
+loglogavgslope          :: 'reduced χ²:     2.5±    0.81, avg:    +0.14±    0.36, #dof:      4'
+mixing_offset           :: 'reduced χ²:     1.6±    0.87, avg:    -0.21±    0.27, #dof:      4'
+mixture_matrix          :: 'reduced χ²:     3.0±    0.68, avg:     +0.8±   0.053, #dof:     16'
+poisson_scale           :: 'reduced χ²: 1.2e+02±    0.72, avg:     +6.2±    0.33, #dof:      4'
+psf_rotation            :: 'reduced χ²:     2.3±     1.5, avg:     -0.3±    0.31, #dof:      4'
+psf_sigma               :: 'reduced χ²:     1.6±    0.61, avg:    +0.22±    0.16, #dof:      4'
+spectrum                :: 'reduced χ²:     2.0±  0.0018, avg: -0.00023±  0.0011, #dof: 550648'
+xi                      :: 'reduced χ²:     2.0±  0.0024, avg:  +0.0018± 0.00067, #dof:1092960'
+zeromode                :: 'reduced χ²:     2.0±     1.2, avg:   -0.048±   0.056, #dof:      4'
+
+
+OPTIMIZE_KL: Iteration 0003 ⛰:+5.0538e+06
+OPTIMIZE_KL: #(Nonlinear sampling steps) (5, 3, 5, 4)
+OPTIMIZE_KL: #(KL minimization steps) 2
+OPTIMIZE_KL: Likelihood residual(s):
+'reduced χ²:     2.1±     2.4, avg:   -0.046±    0.13, #dof: 162412'
+
+OPTIMIZE_KL: Prior residual(s):
+background_std          :: 'reduced χ²: 8.7e+01±    0.67, avg:     +4.4±    0.49, #dof:      4'
+flexibility             :: 'reduced χ²:     2.9±     2.0, avg:    -0.51±    0.46, #dof:      4'
+fluctuations            :: 'reduced χ²:     5.0±    0.56, avg:     -1.3±    0.72, #dof:      4'
+loglogavgslope          :: 'reduced χ²:     2.7±    0.48, avg:    +0.15±    0.55, #dof:      4'
+mixing_offset           :: 'reduced χ²:     1.3±    0.65, avg:    -0.27±    0.75, #dof:      4'
+mixture_matrix          :: 'reduced χ²:     3.3±     0.7, avg:    +0.91±    0.33, #dof:     16'
+poisson_scale           :: 'reduced χ²:   5e+04± 2.9e+01, avg: +1.3e+02±    0.13, #dof:      4'
+psf_rotation            :: 'reduced χ²:     2.2±    0.56, avg:    -0.29±     0.5, #dof:      4'
+psf_sigma               :: 'reduced χ²:     1.8±    0.65, avg:    +0.21±    0.24, #dof:      4'
+spectrum                :: 'reduced χ²:     2.0±   0.003, avg: -0.00018±  0.0016, #dof: 550648'
+xi                      :: 'reduced χ²:     2.0±  0.0017, avg:  +0.0018±  0.0015, #dof:1092960'
+zeromode                :: 'reduced χ²:     1.1±    0.43, avg:    +0.27±     0.5, #dof:      4'
+
+
+OPTIMIZE_KL: Iteration 0004 ⛰:+1.2683e+07
+OPTIMIZE_KL: #(Nonlinear sampling steps) (4, 1, 5, 3)
+OPTIMIZE_KL: #(KL minimization steps) 1
+OPTIMIZE_KL: Likelihood residual(s):
+'reduced χ²:    0.45±    0.24, avg:   -0.083±   0.013, #dof: 162412'
+
+OPTIMIZE_KL: Prior residual(s):
+background_std          :: 'reduced χ²: 8.7e+01±    0.49, avg:     +4.4±    0.39, #dof:      4'
+flexibility             :: 'reduced χ²:     3.6±     2.4, avg:    -0.51±     0.3, #dof:      4'
+fluctuations            :: 'reduced χ²:     5.0±    0.91, avg:     -1.5±    0.65, #dof:      4'
+loglogavgslope          :: 'reduced χ²:     5.0±     2.3, avg:    +0.24±    0.37, #dof:      4'
+mixing_offset           :: 'reduced χ²:    0.66±    0.33, avg:    -0.23±    0.25, #dof:      4'
+mixture_matrix          :: 'reduced χ²:     3.7±     1.0, avg:    +0.82±    0.14, #dof:     16'
+poisson_scale           :: 'reduced χ²:   5e+04± 2.6e+02, avg: +1.3e+02±    0.41, #dof:      4'
+psf_rotation            :: 'reduced χ²:     2.4±     1.4, avg:    -0.29±    0.19, #dof:      4'
+psf_sigma               :: 'reduced χ²:     3.2±     3.0, avg:    +0.21±    0.14, #dof:      4'
+spectrum                :: 'reduced χ²:     2.0±  0.0035, avg: -0.00017±  0.0012, #dof: 550648'
+xi                      :: 'reduced χ²:     2.0± 0.00094, avg:  +0.0018± 0.00085, #dof:1092960'
+zeromode                :: 'reduced χ²:    0.69±    0.61, avg:    +0.25±   0.067, #dof:      4'
+
+
+OPTIMIZE_KL: Iteration 0005 ⛰:+4.6184e+06
+OPTIMIZE_KL: #(Nonlinear sampling steps) (3, 2, 3, 6)
+OPTIMIZE_KL: #(KL minimization steps) 3
+OPTIMIZE_KL: Likelihood residual(s):
+'reduced χ²:   0.048±   0.028, avg:   +0.038±   0.015, #dof: 162412'
+
+OPTIMIZE_KL: Prior residual(s):
+background_std          :: 'reduced χ²: 8.6e+01±    0.84, avg:     +4.4±   0.088, #dof:      4'
+flexibility             :: 'reduced χ²:     2.0±    0.46, avg:    -0.69±    0.36, #dof:      4'
+fluctuations            :: 'reduced χ²:     6.2±     2.6, avg:     -1.8±    0.36, #dof:      4'
+loglogavgslope          :: 'reduced χ²:     5.0±     1.6, avg:   -0.053±     0.3, #dof:      4'
+mixing_offset           :: 'reduced χ²:    0.86±    0.34, avg:     -0.4±    0.26, #dof:      4'
+mixture_matrix          :: 'reduced χ²:     3.0±     1.1, avg:    +0.91±     0.2, #dof:     16'
+poisson_scale           :: 'reduced χ²: 4.9e+04± 3.4e+02, avg: +1.3e+02±    0.97, #dof:      4'
+psf_rotation            :: 'reduced χ²:     2.4±     0.3, avg:    -0.65±    0.51, #dof:      4'
+psf_sigma               :: 'reduced χ²:     2.2±     1.3, avg:    +0.21±    0.38, #dof:      4'
+spectrum                :: 'reduced χ²:     2.0±  0.0032, avg: -0.00026± 0.00033, #dof: 550648'
+xi                      :: 'reduced χ²:     2.0±  0.0027, avg:  +0.0018± 0.00092, #dof:1092960'
+zeromode                :: 'reduced χ²:     1.2±    0.14, avg:    +0.29±    0.56, #dof:      4'
+

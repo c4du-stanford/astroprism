@@ -18,8 +18,8 @@
 
 # ── Data ──────────────────────────────────────────────────────────────────────
 data:
-  path:       null          # path to data directory — must be set by user
-  instrument: null          # e.g. JWST_MIRI, JWST_NIRCAM, HERSCHEL_PACS
+  path:       data/tutorial/jwst_miri_cutout/   # path to data directory
+  instrument: JWST_MIRI      # e.g. JWST_MIRI, JWST_NIRCAM, HERSCHEL_PACS
   extension:  "fits"
 
 # ── Field (latent correlated fields) ─────────────────────────────────────────
@@ -114,7 +114,7 @@ masking:
 inference:
   n_iterations:     20
   n_samples:        4
-  output_directory: "output/run_001"
+  output_directory: "output/my_run"
   seed:             42
   sample_mode:      "linear_resample"   # linear_resample | nonlinear_resample | nonlinear_update
   resume:           true
