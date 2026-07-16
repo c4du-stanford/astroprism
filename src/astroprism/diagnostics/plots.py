@@ -95,6 +95,102 @@ def plot_channel_grid(
     return fig, axes
 
 
+def plot_sky_components(
+    result,
+    channel=0,
+    dataset=None,
+    scale="log",
+    cmap="viridis",
+    figsize=None,
+    savefig=None,
+    show=True,
+):
+    """
+    Visualize the sky decomposition for a single channel after fitting:
+    each sky component separately (e.g. GP mixture, point sources), then the
+    summed sky, then the convolved+noisy prediction, then the real data.
+
+    Generalizes the notebook "sky vs observed vs data" plot to show the
+    individual components that sum into the sky.
+
+    Parameters
+    ----------
+    result : PosteriorResult
+        A loaded run. Used to compute per-component, summed-sky, and response
+        predictions via `result.predict`.
+    channel : int
+        Which channel (wavelength) to display.
+    dataset : BaseDataset, optional
+        Dataset for the observed-data panel and the response prediction. Loaded
+        from the run's files_used.yaml if not provided.
+    scale : str
+        "log" or "linear" color scale.
+    cmap : str
+        Matplotlib colormap.
+    savefig : str, optional
+        Path to save the figure.
+    show : bool
+        Call plt.show() at the end.
+
+    Returns
+    -------
+    fig, axes
+    """
+    ds = dataset if dataset is not None else result.dataset
+    preds = result.predict(
+        quantities=["components", "signal", "response"], dataset=ds
+    )
+
+    comp_block = preds["components"]
+    comp_names = [k for k in comp_block if not (k.endswith("_mean") or k.endswith("_std"))]
+
+    # Build the ordered list of (label, 2D image) panels for this channel.
+    panels = []
+    for name in comp_names:
+        panels.append((f"{name} (mean)", np.asarray(comp_block[f"{name}_mean"])[channel]))
+    panels.append(("sky = Σ components", np.asarray(preds["signal_mean"])[channel]))
+
+    # Convolved + noisy prediction (response mean across samples) and the data.
+    resp_samples = preds["response"]
+    resp_mean_ch = np.mean([np.asarray(s[channel]) for s in resp_samples], axis=0)
+    panels.append(("convolved (response)", resp_mean_ch))
+    panels.append(("data", np.asarray(ds.data[channel])))
+
+    images = [p[1] for p in panels]
+    labels = [p[0] for p in panels]
+
+    fig, axes = _setup_grid(len(panels), figsize=figsize, n_rows=1)
+
+    # Shared color scale across the sky/component/response panels (positive flux);
+    # the data panel shares it too so they are visually comparable.
+    pos = [img[img > 0] for img in images if np.any(img > 0)]
+    vmin = min(float(p.min()) for p in pos) if pos else 1e-3
+    vmax = max(float(np.nanmax(img)) for img in images)
+    if scale == "log":
+        norm = colors.LogNorm(vmin=vmin, vmax=vmax)
+    elif scale == "linear":
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+    else:
+        norm = None
+
+    for idx, (label, img) in enumerate(zip(labels, images)):
+        ax = axes[idx]
+        im = ax.imshow(img, origin="lower", norm=norm, cmap=cmap, interpolation="none")
+        ax.set_title(label)
+        ax.axis("off")
+
+    cbar_ax = fig.add_axes([0.1, 0.04, 0.8, 0.025])
+    fig.colorbar(im, cax=cbar_ax, orientation="horizontal", label="Flux")
+
+    ch_key = None
+    if getattr(ds, "channel_keys", None) is not None and channel < len(ds.channel_keys):
+        ch_key = ds.channel_keys[channel]
+    fig.suptitle(f"Sky components — channel {channel}" + (f" ({ch_key})" if ch_key else ""))
+    plt.tight_layout(rect=[0, 0.07, 1, 0.95])
+    _finish(fig, savefig, show)
+    return fig, axes
+
+
 def plot_parity_grid(
     predicted,
     observed,

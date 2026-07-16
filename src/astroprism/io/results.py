@@ -13,8 +13,7 @@ import jax.numpy as jnp
 import numpy as np
 import yaml
 
-from astroprism.models.field import FieldModel
-from astroprism.models.signal import SignalModel
+from astroprism.models.sky import DiffuseField, PointSourceField, SkyComponent, SkyModel
 from astroprism.models.response import InstrumentResponse
 from astroprism.models.noise import NoiseModel
 from astroprism.models.forward import ForwardModel
@@ -101,17 +100,28 @@ class PosteriorResult:
         return self._dataset
 
     @property
-    def signal_model(self) -> SignalModel:
-        """Signal model (lazy built, cached)."""
+    def sky_model(self) -> SkyModel:
+        """Sky model (lazy built, cached). Mirrors the components built in run.py."""
         if self._signal_model is None:
             d = self.derived
-            field = FieldModel(
+            kw = dict(
                 n_channels=d["n_channels"],
                 shape=tuple(d["signal_shape"]),
                 distances=tuple(d["distances"]),
             )
-            self._signal_model = SignalModel(field)
+            components = {
+                "diffuse": SkyComponent(DiffuseField(**kw), prefix="diffuse"),
+            }
+            if "point_source" in self._config:
+                components["point"] = SkyComponent(PointSourceField(**kw), prefix="point")
+            self._signal_model = SkyModel(components)
         return self._signal_model
+
+    # Back-compat alias (pre-rename name).
+    @property
+    def signal_model(self) -> SkyModel:
+        """Deprecated alias for `sky_model`."""
+        return self.sky_model
 
     @property
     def response_model(self) -> InstrumentResponse:
@@ -142,8 +152,12 @@ class PosteriorResult:
         Parameters
         ----------
         quantities : list of str, optional
-            What to compute. Options: "signal", "response", "noise_std".
-            Default: ["signal"].
+            What to compute. Options: "signal", "components", "response",
+            "noise_std". Default: ["signal"].
+            - "signal"     : the total (summed) sky flux.
+            - "components" : per-component flux cubes (e.g. diffuse, point),
+                             keyed by component name. Use to inspect each sky
+                             component separately after fitting.
         dataset : BaseDataset, optional
             Dataset for response/noise predictions. Loaded from files_used.yaml
             if not provided.
@@ -151,9 +165,11 @@ class PosteriorResult:
         Returns
         -------
         dict with keys:
-            "signal"    : list of (n_channels, ny, nx) arrays, one per sample
-            "response"  : list of [ch0_array, ch1_array, ...], one per sample
-            "noise_std" : list of [ch0_array, ch1_array, ...], one per sample
+            "signal"     : list of (n_channels, ny, nx) arrays, one per sample
+            "components" : dict {name: list of (n_channels, ny, nx) arrays}, plus
+                           "<name>_mean"/"<name>_std" per component
+            "response"   : list of [ch0_array, ch1_array, ...], one per sample
+            "noise_std"  : list of [ch0_array, ch1_array, ...], one per sample
             "signal_mean" : (n_channels, ny, nx) mean across samples
             "signal_std"  : (n_channels, ny, nx) std across samples
         Only requested quantities (and their means/stds) are included.
@@ -162,14 +178,23 @@ class PosteriorResult:
             quantities = ["signal"]
 
         need_response = "response" in quantities or "noise_std" in quantities
+        need_components = "components" in quantities
+        component_names = self.sky_model.component_names
 
-        results = {q: [] for q in quantities}
+        results = {q: [] for q in quantities if q != "components"}
+        if need_components:
+            results["components"] = {name: [] for name in component_names}
 
         for s in self.samples:
             x = s.tree
 
+            if need_components:
+                comps = self.sky_model.evaluate_components(x)
+                for name, cube in comps.items():
+                    results["components"][name].append(jnp.array(cube))
+
             if "signal" in quantities or need_response:
-                sig = self.signal_model(x)
+                sig = self.sky_model(x)
 
             if "signal" in quantities:
                 results["signal"].append(jnp.array(sig))
@@ -186,5 +211,12 @@ class PosteriorResult:
             stacked = jnp.stack(results["signal"])
             results["signal_mean"] = jnp.mean(stacked, axis=0)
             results["signal_std"] = jnp.std(stacked, axis=0)
+
+        # Compute mean/std per component
+        if need_components:
+            for name in component_names:
+                stacked = jnp.stack(results["components"][name])
+                results["components"][f"{name}_mean"] = jnp.mean(stacked, axis=0)
+                results["components"][f"{name}_std"] = jnp.std(stacked, axis=0)
 
         return results

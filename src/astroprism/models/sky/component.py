@@ -1,12 +1,18 @@
 """
-signal.py
+component.py
 
-Signal model: combines latent GP fields via linear mixing and activation.
+Sky component model: combines a latent spatial field with a linear mixing matrix
+and activation to produce one component's physical flux cube.
 
 s = activation(A @ u + offset)
 
-where u are the latent FieldModel fields, A is the mixing matrix,
-and the activation maps to physical flux (e.g. exp for positivity).
+where u are the latent field values (from any *Field base), A is the mixing
+matrix describing cross-wavelength correlations, and the activation maps to
+physical flux (e.g. exp for positivity).
+
+A sky is built by summing several SkyComponents (e.g. diffuse + point sources);
+each component carries its own mixing matrix and must use a distinct `prefix` so
+the parameter domains stay disjoint.
 """
 
 # === Imports ======================================================================================
@@ -17,7 +23,7 @@ import jax
 import jax.numpy as jnp
 import nifty8.re as jft
 
-from astroprism.models.field import FieldModel
+from astroprism.models.sky.diffuse import DiffuseField
 from astroprism.utils.priors import build_prior
 from astroprism.utils.config import get_defaults
 
@@ -33,35 +39,41 @@ ACTIVATIONS = {
 }
 
 
-class SignalModel(jft.Model):
+class SkyComponent(jft.Model):
     """
-    Signal model combining latent GP fields via linear mixing.
+    One component of the sky: a latent spatial field mixed across channels.
 
     s = activation(A @ u + offset)
 
     Parameters
     ----------
-    field : FieldModel
-        Latent GP fields.
-    mix_mode : str
+    field : jft.Model
+        Latent spatial base (e.g. DiffuseField or PointSourceField). Must expose
+        `.domain`, `.init`, `.n_channels`, `.shape`, `.distances` and return a
+        `(n_channels, ny, nx)` array when called.
+    mixing_mode : str
         "full" for dense mixing matrix, "cholesky" for Cholesky parameterization.
-    mixing : dict
+    mixing_matrix : dict
         Prior config for the mixing matrix (used for both modes).
-    offset : dict
+    mixing_offset : dict
         Prior config for the per-channel offset.
     activation : str
         Activation function name (exp, softplus, sigmoid, identity, relu, square).
+    prefix : str
+        Prepended to this component's parameter names so multiple components
+        summed into a SkyModel keep disjoint domains (e.g. "diffuse", "point").
     """
 
     def __init__(
         self,
-        field: FieldModel,
+        field: jft.Model,
         mixing_mode: str = None,
         mixing_matrix: dict = None,
         mixing_offset: dict = None,
         activation: str = None,
+        prefix: str = "",
     ):
-        s = get_defaults()["signal"]
+        s = get_defaults()["component"]
         activation    = activation    if activation    is not None else s.get("activation", "exp")
         mixing_mode   = mixing_mode   if mixing_mode   is not None else s.get("mixing_mode", "full")
         mixing_matrix = mixing_matrix or s["mixing_matrix"]
@@ -73,6 +85,7 @@ class SignalModel(jft.Model):
         self.activation_name = activation
         self.field = field
         self.mixing_mode = mixing_mode
+        self.prefix = prefix
         domain = self.field.domain
         init = self.field.init
         n_channels = self.field.n_channels
@@ -84,7 +97,7 @@ class SignalModel(jft.Model):
         else:
             raise ValueError(f"Unknown mixing_mode: {mixing_mode}. Choose 'full' or 'cholesky'.")
 
-        self.mixing_offset = build_prior("mixing_offset", mixing_offset, (n_channels,))
+        self.mixing_offset = build_prior(self._name("mixing_offset"), mixing_offset, (n_channels,))
         domain = domain | self.mixing_offset.domain
         init = init | self.mixing_offset.init
 
@@ -122,13 +135,17 @@ class SignalModel(jft.Model):
         params = self.init(key)
         return jnp.array(self(params))
 
+    def _name(self, base: str) -> str:
+        """Prefix a parameter name to keep component domains disjoint."""
+        return f"{self.prefix}_{base}" if self.prefix else base
+
     def _build_full_mixing(self, n_channels, domain, init, mixing):
-        self.mixing_matrix = build_prior("mixing_matrix", mixing, (n_channels, n_channels))
+        self.mixing_matrix = build_prior(self._name("mixing_matrix"), mixing, (n_channels, n_channels))
         return domain | self.mixing_matrix.domain, init | self.mixing_matrix.init
 
     def _build_cholesky_mixing(self, n_channels, domain, init, mixing):
-        self.mixing_diag     = build_prior("mixing_diag",     mixing, (n_channels,))
-        self.mixing_off_diag = build_prior("mixing_off_diag", mixing, (_n_triangular_lower(n_channels),))
+        self.mixing_diag     = build_prior(self._name("mixing_diag"),     mixing, (n_channels,))
+        self.mixing_off_diag = build_prior(self._name("mixing_off_diag"), mixing, (_n_triangular_lower(n_channels),))
         return (
             domain | self.mixing_diag.domain | self.mixing_off_diag.domain,
             init | self.mixing_diag.init | self.mixing_off_diag.init,

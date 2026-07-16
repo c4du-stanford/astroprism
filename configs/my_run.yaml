@@ -22,13 +22,13 @@ data:
   instrument: JWST_MIRI      # e.g. JWST_MIRI, JWST_NIRCAM, HERSCHEL_PACS
   extension:  "fits"
 
-# ── Field (latent correlated fields) ─────────────────────────────────────────
+# ── Diffuse (latent correlated fields / GP base) ─────────────────────────────
 #
 # Prior types fixed by NIFTy: lognormal for fluctuations/flexibility,
 # normal for loglogavgslope. Only prior_params can be changed.
 # Domain keys: zeromode, fluctuations, loglogavgslope, flexibility, spectrum, xi
 # =============================================================================
-field:
+diffuse:
   offset_mean:    0.0
   offset_std:
     prior_params: [1.0, 0.1]
@@ -47,12 +47,13 @@ field:
     constant_until: 0
     point_estimate_until: 0
 
-# ── Signal (mixing + activation) ─────────────────────────────────────────────
+# ── Component (mixing + activation) ──────────────────────────────────────────
 #
-# Domain keys: mixing_matrix (full) or mixing_diag + mixing_off_diag (cholesky),
-#              mixing_offset
+# Shared mixing/activation config applied to EACH sky component. Per-component
+# domain keys are prefixed (e.g. diffuse_mixing_matrix, point_mixing_matrix):
+#   mixing_matrix (full) or mixing_diag + mixing_off_diag (cholesky), mixing_offset
 # =============================================================================
-signal:
+component:
   activation: "exp"             # exp | softplus | sigmoid | identity | relu | square
   mixing_mode: "full"           # "full" or "cholesky"
   mixing_matrix:
