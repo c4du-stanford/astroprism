@@ -27,8 +27,7 @@ import yaml
 from astroprism.utils import load_config
 from astroprism.utils.masking import build_masks, save_masks
 from astroprism.io.dataset import load_dataset
-from astroprism.models.field import FieldModel
-from astroprism.models.signal import SignalModel
+from astroprism.models.sky import DiffuseField, PointSourceField, SkyComponent, SkyModel
 from astroprism.models.response import InstrumentResponse
 from astroprism.models.noise import NoiseModel
 from astroprism.models.forward import ForwardModel
@@ -66,13 +65,34 @@ def main(args=None):
     signal_shape = dataset.shapes[ref_idx]
     distances    = pixel_scales[ref_idx]
 
-    # 4. Build models
-    spatial_gp = FieldModel(
-        n_channels=dataset.n_channels,
-        shape=signal_shape,
-        distances=distances,
+    # 4. Build sky model — diffuse component (always) + optional point sources.
+    #    Each component is a SkyComponent (field -> mixing matrix -> activation);
+    #    components are summed at flux level by SkyModel.
+    diffuse = SkyComponent(
+        DiffuseField(
+            n_channels=dataset.n_channels,
+            shape=signal_shape,
+            distances=distances,
+        ),
+        prefix="diffuse",
     )
-    signal_model = SignalModel(spatial_gp)
+    components = {"diffuse": diffuse}
+
+    if "point_source" in cfg:
+        ps_spatial = cfg["point_source"].get("spatial", {})
+        point = SkyComponent(
+            PointSourceField(
+                n_channels=dataset.n_channels,
+                shape=signal_shape,
+                distances=distances,
+                alpha=ps_spatial.get("alpha"),
+                q=ps_spatial.get("q"),
+            ),
+            prefix="point",
+        )
+        components["point"] = point
+
+    signal_model = SkyModel(components)
 
     response_model = InstrumentResponse(
         dataset=dataset,
@@ -178,8 +198,8 @@ def _build_schedule(cfg: dict):
     # Collect all scheduled params: {domain_key: {constant_until, point_estimate_until}}
     schedule = {}
 
-    # Field params — config key maps to domain key
-    field_cfg = cfg.get("field", {})
+    # Diffuse field params — config key maps to (unprefixed) correlated-field domain key
+    field_cfg = cfg.get("diffuse", {})
     field_key_map = {
         "offset_std": "zeromode",
         "fluctuations": "fluctuations",
@@ -191,19 +211,23 @@ def _build_schedule(cfg: dict):
         if isinstance(entry, dict) and ("constant_until" in entry or "point_estimate_until" in entry):
             schedule[domain_key] = entry
 
-    # Signal params — config key maps to domain key(s)
-    signal_cfg = cfg.get("signal", {})
-    mixing_mode = signal_cfg.get("mixing_mode", "full")
-    mixing_entry = signal_cfg.get("mixing_matrix", {})
-    if isinstance(mixing_entry, dict) and ("constant_until" in mixing_entry or "point_estimate_until" in mixing_entry):
-        if mixing_mode == "full":
-            schedule["mixing_matrix"] = mixing_entry
-        elif mixing_mode == "cholesky":
-            schedule["mixing_diag"] = mixing_entry
-            schedule["mixing_off_diag"] = mixing_entry
-    offset_entry = signal_cfg.get("mixing_offset", {})
-    if isinstance(offset_entry, dict) and ("constant_until" in offset_entry or "point_estimate_until" in offset_entry):
-        schedule["mixing_offset"] = offset_entry
+    # Component (mixing + offset) params — domain keys are per-component prefixed
+    # ("diffuse_mixing_matrix", "point_mixing_matrix", ...). The point component is
+    # only present when a point_source block is configured.
+    component_cfg = cfg.get("component", {})
+    mixing_mode = component_cfg.get("mixing_mode", "full")
+    active_prefixes = ["diffuse"] + (["point"] if "point_source" in cfg else [])
+    mixing_entry = component_cfg.get("mixing_matrix", {})
+    offset_entry = component_cfg.get("mixing_offset", {})
+    for prefix in active_prefixes:
+        if isinstance(mixing_entry, dict) and ("constant_until" in mixing_entry or "point_estimate_until" in mixing_entry):
+            if mixing_mode == "full":
+                schedule[f"{prefix}_mixing_matrix"] = mixing_entry
+            elif mixing_mode == "cholesky":
+                schedule[f"{prefix}_mixing_diag"] = mixing_entry
+                schedule[f"{prefix}_mixing_off_diag"] = mixing_entry
+        if isinstance(offset_entry, dict) and ("constant_until" in offset_entry or "point_estimate_until" in offset_entry):
+            schedule[f"{prefix}_mixing_offset"] = offset_entry
 
     # Response params — config key == domain key
     for name, entry in cfg.get("response", {}).items():

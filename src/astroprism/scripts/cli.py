@@ -37,7 +37,7 @@ def main():
     predict_parser.add_argument("--run-dir", required=True, metavar="PATH", help="Path to run output directory")
     predict_parser.add_argument(
         "--quantities", nargs="+", default=["signal"],
-        choices=["signal", "response", "noise_std"],
+        choices=["signal", "components", "response", "noise_std"],
         help="Quantities to predict (default: signal)",
     )
     predict_parser.add_argument("--output-dir", default=None, metavar="PATH", help="Output directory (default: run-dir/predictions/)")

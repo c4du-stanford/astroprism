@@ -1,7 +1,10 @@
 """
-field.py
+diffuse.py
 
-Latent spatial field model using NIFTy8 correlated fields.
+Diffuse latent spatial field model using NIFTy8 correlated fields (GP).
+
+Produces a stack of independent per-channel correlated fields — the smooth,
+spatially-correlated spatial base for the diffuse sky component.
 """
 
 # === Imports ======================================================================================
@@ -15,7 +18,7 @@ from astroprism.utils.config import get_defaults
 
 # === Main =========================================================================================
 
-class FieldModel(jft.Model):
+class DiffuseField(jft.Model):
     """A collection of independent correlated field models for each channel."""
 
     def __init__(
@@ -32,7 +35,7 @@ class FieldModel(jft.Model):
         name: str = "",
         prefix: str = "",
     ):
-        gp = get_defaults()["field"]
+        gp = get_defaults()["diffuse"]
         offset_mean    = offset_mean    if offset_mean    is not None else gp["offset_mean"]
         offset_std     = offset_std     if offset_std     is not None else gp["offset_std"]
         fluctuations   = fluctuations   if fluctuations   is not None else gp["fluctuations"]

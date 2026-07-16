@@ -29,7 +29,7 @@ def main(args=None):
         parser.add_argument("--run-dir", required=True, metavar="PATH", help="Path to run output directory")
         parser.add_argument(
             "--quantities", nargs="+", default=["signal"],
-            choices=["signal", "response", "noise_std"],
+            choices=["signal", "components", "response", "noise_std"],
             help="Quantities to predict",
         )
         parser.add_argument("--output-dir", default=None, metavar="PATH", help="Output directory (default: run-dir/predictions/)")
@@ -58,6 +58,17 @@ def main(args=None):
                 samples=np.asarray(np.stack([np.asarray(s) for s in predictions["signal"]])),
             )
             print(f"  Saved signal.npz (mean, std, samples)")
+
+        elif quantity == "components":
+            # Per-component flux cubes — save mean/std per component
+            comps = predictions["components"]
+            names = [k for k in comps if not (k.endswith("_mean") or k.endswith("_std"))]
+            save = {}
+            for name in names:
+                save[f"{name}_mean"] = np.asarray(comps[f"{name}_mean"])
+                save[f"{name}_std"] = np.asarray(comps[f"{name}_std"])
+            np.savez(os.path.join(output_dir, "components.npz"), **save)
+            print(f"  Saved components.npz ({', '.join(names)} mean/std)")
 
         elif quantity == "response":
             # Response is list of per-channel arrays per sample — save mean

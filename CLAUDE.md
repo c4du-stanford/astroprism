@@ -8,13 +8,17 @@ Built on NIFTy8.re (JAX) for Bayesian inference with full posterior uncertainty.
 ```
 src/astroprism/
   models/
-    gp.py           # SpatialGP, MixtureGP — signal priors
-    forward.py      # ForwardModel — combines GP + response + noise
+    sky/
+      diffuse.py      # DiffuseField — smooth GP / correlated-field spatial base
+      point_source.py # PointSourceField — sparse per-pixel inverse-gamma base
+      component.py    # SkyComponent — base field → mixing matrix → activation (one component's flux)
+      sky.py          # SkyModel — sum of named components; .evaluate_components() for per-component access
+    forward.py      # ForwardModel — combines SkyModel + response + noise
     response.py     # InstrumentResponse — PSF convolution + reprojection
     noise.py        # NoiseModel
     likelihood.py   # LikelihoodModel, build_likelihood()
   operators/
-    convolution.py  # Convolver
+    convolution.py  # Convolver (reused by response + future intrinsic Moffat)
     reprojection.py # Reprojector
   inference/
     vi.py           # VariationalInference (supports scheduling)
@@ -22,6 +26,16 @@ src/astroprism/
     dataset.py      # BaseDataset, SingleInstrumentDataset, MultiInstrumentDataset
     instrument_loaders.py
     preprocessing.py
+    results.py      # PosteriorResult — predict(["components", "signal", ...])
+  diagnostics/
+    plots.py        # plot_channel_grid, plot_sky_components, ...
+
+The sky is built as a sum of named SkyComponents (diffuse [+ point sources]).
+Each component is `activation(A @ field + offset)` where the mixing matrix A
+couples wavelength channels; components are summed at flux level by SkyModel.
+Add a point-source component by adding a `point_source:` block to the config.
+Back-compat aliases `FieldModel = DiffuseField`, `SignalModel = SkyComponent`
+remain importable from `astroprism.models`.
 ```
 
 ## NIFTy8.re essentials

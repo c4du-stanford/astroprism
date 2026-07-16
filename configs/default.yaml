@@ -22,13 +22,14 @@ data:
   instrument: null          # e.g. JWST_MIRI, JWST_NIRCAM, HERSCHEL_PACS
   extension:  "fits"
 
-# ── Field (latent correlated fields) ─────────────────────────────────────────
+# ── Diffuse (latent correlated fields / GP base) ─────────────────────────────
 #
+# Smooth, spatially-correlated base for the diffuse sky component.
 # Prior types fixed by NIFTy: lognormal for fluctuations/flexibility,
 # normal for loglogavgslope. Only prior_params can be changed.
 # Domain keys: zeromode, fluctuations, loglogavgslope, flexibility, spectrum, xi
 # =============================================================================
-field:
+diffuse:
   offset_mean:    0.0
   offset_std:
     prior_params: [1.0, 0.1]
@@ -47,12 +48,13 @@ field:
     constant_until: 0
     point_estimate_until: 0
 
-# ── Signal (mixing + activation) ─────────────────────────────────────────────
+# ── Component (mixing + activation) ──────────────────────────────────────────
 #
-# Domain keys: mixing_matrix (full) or mixing_diag + mixing_off_diag (cholesky),
-#              mixing_offset
+# Shared mixing/activation config applied to EACH sky component. Per-component
+# domain keys are prefixed (e.g. diffuse_mixing_matrix, point_mixing_matrix):
+#   mixing_matrix (full) or mixing_diag + mixing_off_diag (cholesky), mixing_offset
 # =============================================================================
-signal:
+component:
   activation: "exp"             # exp | softplus | sigmoid | identity | relu | square
   mixing_mode: "full"           # "full" or "cholesky"
   mixing_matrix:
@@ -65,6 +67,19 @@ signal:
     prior_params: [0.0, 1.0]
     constant_until: 0
     point_estimate_until: 0
+
+# ── Point sources (sparse inverse-gamma base) ────────────────────────────────
+#
+# OPTIONAL second sky component. Comment out this whole block to run diffuse-only
+# (the default). When present, a point-source SkyComponent is summed with the
+# diffuse one. The spatial base is a per-pixel inverse-gamma prior (sparse,
+# heavy-tailed) — `alpha` (shape a) and `q` (scale) control the sparsity/brightness.
+# Mixing/activation reuse the `component:` block above (prefixed "point_").
+# =============================================================================
+# point_source:
+#   spatial:
+#     alpha: 1.0
+#     q:     0.1
 
 # ── Response (instrument response) ───────────────────────────────────────────
 response:
@@ -91,7 +106,7 @@ noise:
   noise_scale:
     prior_type:   "lognormal"
     prior_params: [0.01, 0.1]
-    constant_until:how       9999   # frozen forever
+    constant_until:       9999   # frozen forever
     point_estimate_until: 0
 
 # ── Masking (held-out validation) ─────────────────────────────────────────────
